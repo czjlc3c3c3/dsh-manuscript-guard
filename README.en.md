@@ -1,265 +1,213 @@
-# Manuscript Guard (dsh-manuscript-guard)
+# Manuscript Guard · Text-Only Manuscript Audit
 
-> **This is a self-maintained trimmed fork (F1) of `xmutfyh/dsh-plugin-writing-guard`, not upstream.**
->
-> - **Scope**: plain-text manuscript audit only, for a personal research workflow (DSH profile `web`).
-> - **Removed**: the entire Word/Python surface (8 `writing_word_*` tools, `src/word_guard/`, the `venv`/`DSH_PYTHON` dependency) and the `autoAuditOnWrite` / `autoBrief` auto-injection machinery (which used to wedge DSH session-format-v4 persistence).
-> - **Kept**: 5 text-side tools — `writing_audit`, `writing_rules`, `writing_style_profile`, `writing_journal_profile`, `writing_delivery_audit` — plus the whole rule engine `src/rules.ts` (core asset; rule logic untouched).
-> - **Version**: `2.1.0` (leaves the upstream 2.0.1 line). Peer widened to `@deepseek-ai/dsh-tools: ^0.1.0-rc.6 || ^0.2.0-rc.1` so DSH 0.2.x loads it with **no** `compatibility.json` exemption.
-> - **Not published to npm**: install from git (`github:czjlc3c3c3/dsh-manuscript-guard#semver:^2.1.0`).
-> - **License**: MIT, upstream copyright notice retained.
->
-> Everything below is upstream text; its Word/DOCX, npm-install and test-count statements **no longer apply to this fork** and are kept for lineage only.
+[![CI](https://github.com/czjlc3c3c3/dsh-manuscript-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/czjlc3c3c3/dsh-manuscript-guard/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
+> **This repository is a self-maintained trimmed fork (F1) of [`xmutfyh/dsh-plugin-writing-guard`](https://github.com/xmutfyh/dsh-plugin-writing-guard), not upstream.**
+> The Chinese README is the primary one: [`README.md`](README.md). This file is its English mirror.
 
-# DSH Writing Guard
-
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
-[![CI](https://github.com/xmutfyh/dsh-plugin-writing-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/xmutfyh/dsh-plugin-writing-guard/actions/workflows/ci.yml)
-
-**Less explanation. More argument. Preserve the science.**
-
-Writing Guard is a research-paper writing guard for DeepSeek Harness:
-it guides the host model toward economical, evidence-bound prose and audits mechanical, templated and defensive writing,
-protects research facts and scientific commitments during AI-assisted revision,
-calibrates a manuscript's writing distributions against representative target-journal papers,
-and detects context-to-artifact leakage in final deliverables.
-
-> **Language can change. Evidence cannot. Rejected alternatives should not leak.**
-
-**Prompt-guided writing · Deterministic integrity core**
+**Less explanation. More argument. Preserve the science.** The plugin turns writing discipline into behaviour
+constraints for the host model, then audits the result with a deterministic local rule engine — it does not write
+your paper, and it does not ask another model to grade it.
 
 ---
 
-## New in 2.0 — Argument Economy & Control-Plane Separation
+## 1. What this fork changes
 
-Writing Guard 2.0 moves semantic style decisions before generation while keeping deterministic code focused on integrity.
-
-- **Critique is not content:** reviewer comments, user edit instructions and guard findings are control context, not manuscript evidence.
-- **Prefer CUT over REWRITE:** delete sentences that only pre-empt criticism, reassure reviewers, advertise importance or restate an obvious implication.
-- **Do not close every semantic loop:** stop after evidence plus the necessary interpretation; retain non-obvious statistics, reproducibility detail and genuine epistemic boundaries.
-- **Style-only revisions default to the same length or shorter:** no explanatory inflation without new supported content.
-- **Auto-audit no longer reinjects snippets or rewrite suggestions:** it returns structured rule/action metadata only.
-
-Example:
-
-```text
-Avoid:  To prevent data leakage, normalization was carefully performed using only the training data.
-Prefer: Normalization parameters were estimated from the training data.
-```
+| Item | Detail |
+|---|---|
+| **Scope** | Plain-text manuscript audit only, for a personal research workflow (DSH profile `web`) |
+| **Kept** | 5 text-side tools, plus the complete deterministic rule engine `src/rules.ts` (**rule logic untouched**) |
+| **Removed** | The whole Word/Python surface: 8 `writing_word_*` tools, `src/word_guard/` (12 Python modules), the `.docx` extraction branch, and the `venv` / `DSH_PYTHON` dependency |
+| **Removed** | The `autoAuditOnWrite` / `autoBrief` auto-injection machinery, which pushed a control block with a v3-era `source` into the agent inbox and tripped DSH session-format-v4 persistence admission, wedging the session's write channel. This fork **deletes the code path** rather than disabling it by config — the plugin now subscribes to **no** DSH events and uses only `ctx.tools` |
+| **Version** | `2.1.0` (leaves the upstream 2.0.1 line) |
+| **Compatibility** | Peer widened to `@deepseek-ai/dsh-tools: ^0.1.0-rc.6 \|\| ^0.2.0-rc.1`, covering both the npm stable line and the 0.2.x prerelease line; **no** `compatibility.json` exemption needed |
+| **Not published to npm** | Install straight from git |
+| **License** | MIT, upstream copyright notice retained |
 
 ---
 
-## Five guards: STYLE / EVIDENCE / JOURNAL / DELIVERY / DOCUMENT
+## 2. Quick start
 
-1. **Less AI / STYLE**
-   Detect and reduce mechanical, templated, over-defensive AI writing — revision residue, defensive writing, hollow buzzwords and structural tells. We do not hide AI use; we remove bad AI writing.
-   > Stronger AI models increasingly write “correct but unnecessary” sentences.
+### Prerequisites
 
-2. **More Evidence / EVIDENCE**
-   Numbers, p-values, citations and DOIs must not silently drift during polishing; null findings must not disappear; correlation must not become causation; scope and evidence status must not be silently changed. Language can change. Evidence cannot.
+- DSH 0.1.x or 0.2.x (including `0.2.0-rc.*` / `0.2.1-alpha.*`)
+- Node.js ≥ 18
+- **No Python** (this fork has no Python dependency)
 
-3. **Better Journal Fit / JOURNAL**
-   Distill section-level writing distributions, scientific claim patterns and rhetorical moves from representative target-journal papers. It is not only about wording — it compares what each section typically says and in what order.
-
-4. **Clean Delivery / DELIVERY**
-   Detects context-to-artifact leakage: rejected alternatives, revision history, or working-context residue that leaks into final deliverables without support from the authoritative baseline. CAL = Context-to-Artifact Leakage (an engineering term, not academic).
-   > Language can change. Evidence cannot. Rejected alternatives should not leak.
-
-5. **Safe Document Editing / DOCUMENT**
-   Verify edit scope and preserve Word/OOXML structures, equations, tables and package integrity.
-
-## Quick Start
+### Install
 
 ```sh
-dsh plugin --profile web add dsh-plugin-writing-guard
-dsh web
+# Option 1 (recommended): pin a semver tag for reproducible dependencies
+cd /root/.dsh/profiles/web
+pnpm add "dsh-manuscript-guard@github:czjlc3c3c3/dsh-manuscript-guard#semver:^2.1.0"
+
+# Option 2: via the dsh CLI
+dsh plugin --profile web add github:czjlc3c3c3/dsh-manuscript-guard#semver:^2.1.0
 ```
 
-Published on npm. GitHub / local source installs are also supported — see [full install instructions](#full-install).
+Two manual steps remain after installing:
+
+1. **Register the bundle in the profile**: add `"dsh-manuscript-guard"` to `dsh.profile.bundles` in the profile's
+   `package.json`, and add `- id: dsh-manuscript-guard` / `name: dsh-manuscript-guard` to `cordis.patch.yml`
+   (`id` is the row a profile-level config override targets; `name` decides which package is loaded — both are required).
+2. **Allow build scripts**: a git install runs `postinstall`, which pnpm blocks by default. On
+   `ERR_PNPM_IGNORED_BUILDS`:
+
+   ```sh
+   cd /root/.dsh/profiles/web && pnpm approve-builds --all && pnpm install
+   ```
+
+   > ⚠️ The allow-list key pnpm wants is the **resolved codeload URL plus the commit hash**, not just the package
+   > name. **Re-installing a new tag or commit trips this again** — rerun the command above when it does.
+
+### Restart
+
+DSH must be restarted before the tools appear (restart is performed by the operator, not by any automation).
+The plugin needs no configuration.
 
 ---
 
-## How it works
-
-```text
-writing rules → Agent revision → automatic guard → targeted revision
-```
-
-Writing Guard is not a one-shot humanizer. It works continuously inside the DSH paper workflow:
-
-- Load `writing_rules` before writing
-- Check while writing / editing with `writing_audit`
-- Compare before/after revisions to protect Scholarship / Epistemic invariants
-
-## STYLE — argument economy and prose discipline
-
-Detects:
-
-- Revision residue: `revised`, `as requested`, `本轮`, `审稿人要求`
-- Defensive writing: concession stacking, limitation pre-emption, generic value claim, unnecessary epistemic retreat
-- Mechanical rhetoric: `not X but Y`, `rather than` overuse, rule of three, em-dash / colon abuse
-- LLM-associated words: `delve` / `tapestry` / `testament` / `leverage` (density-based, a single use is fine)
-- Chinese filler chains, average sentence-length anomalies, etc.
-
-Density thresholds are language-aware: English by word count, Chinese by CJK character count, with a double gate to avoid false positives on domain terms.
-
-## EVIDENCE — Scholarship + Epistemic Lock
-
-Writing Guard compares before/after AI revision and protects:
-
-- Numbers, percentages, p-values, confidence intervals, units
-- `\cite` / `\ref`, Figure/Table numbers, DOIs
-- Causal and evidential force: `associated with` must not silently become `caused`
-- Negation / null findings: `no significant difference` must not disappear or flip
-- Scope boundaries and evidence status: “observed / reported” must not become direct claims
-
-Each finding is tagged `INVARIANT / VIOLATION / CANDIDATE / ADVISORY` and an integrity regression report is produced.
-
-## JOURNAL — target-journal calibration
-
-Writing Guard builds a corpus-aware Journal Profile from multiple representative target-journal papers, each parsed independently.
-
-It currently compares five signal groups:
-
-- **Structure**: sentence length, paragraph length
-- **Voice**: passive voice, first-person usage
-- **Citations**: bibliographic citations, figure/table references
-- **Scientific claims**: claim density, causal/evidential strength, hedging, scope, null findings
-- **Rhetoric**: rhetorical move coverage, canonical order, section-bound transition fit
-
-Journal Fit is reported per section, together with corpus size and confidence.
-
-> **Scientific Integrity > Journal Fit**
-
-Journal Fit uses grouped weights: Structure 20% / Voice 10% / Citations 15% / Epistemics 35% / Rhetoric 20%.
-
-## Five DSH Tools
+## 3. The five tools
 
 | Tool | Purpose |
 |---|---|
-| `writing_rules` | Returns the writing-discipline cheat sheet before writing |
-| `writing_audit` | Main audit entry: checks STYLE issues, compares Scholarship / Epistemic invariants, and can load Style Profile / Journal Profile |
-| `writing_style_profile` | Learns an author's style from previous papers and returns JSON for audit |
-| `writing_journal_profile` | Distills a Journal Profile from target-journal papers and returns JSON for audit |
-| `writing_delivery_audit` | DELIVERY layer: detects rejected alternatives, revision-process residue, and provenance leakage that lack factual support in the authoritative baseline (CAL detection) |
+| **`writing_audit`** | The main tool. Scans manuscript text for writing-discipline issues; pass `filePath` or `text`, and use `profile` to declare the document type |
+| **`writing_rules`** | Returns the writing-discipline cheat sheet (control-context isolation, argument economy, over-explanation, claim calibration, scientific integrity). Load it before drafting |
+| **`writing_style_profile`** | Derives a **style rhythm fingerprint** from the author's past papers (sentence/paragraph length median, SD, CV; short/long sentence ratio; dash, hedge and connective densities) as JSON |
+| **`writing_journal_profile`** | Distils a **journal writing profile** from representative target-journal papers (per-section syntax, citation, epistemic fingerprint and rhetorical-move distributions). Stores abstract statistics only, never source sentences |
+| **`writing_delivery_audit`** | Delivery-surface leakage detection (CAL): whether rejected alternatives, revision-process residue or provenance leakage reach the final artifact (title, caption, filename, commit, PR, submission note, …) |
 
-### writing_delivery_audit example
+### `writing_audit` parameters
 
-```js
-auditDelivery({
-  text: 'Remove Toast from the login form',
-  surface: 'commit',
-  baseline: 'export default function LoginForm() { return <div><Input /></div>; }',
-  rejectedTerms: ['Toast'],
-})
-// → findings: [REJECTED_ALTERNATIVE_LEAKAGE, UNJUSTIFIED_NEGATIVE_REFERENCE]
-// Toast was rejected and is absent from baseline → both fire
-```
+| Parameter | Meaning |
+|---|---|
+| `text` / `filePath` | One of the two. Plain text only: `.txt` / `.md` / `.markdown` / `.tex` (**no `.docx` / `.pdf`** — convert to Markdown first) |
+| `profile` | `manuscript` / `rebuttal` / `cover_letter` / `review` / `notes` / `unknown`. Inferred from the path when omitted |
+| `verbose` | `true` emits the hint and suggested fix for every finding |
+| `projectResidueTerms` | Extra project-internal term list for this call only |
+| `original` | **The pre-edit text.** Enables Scholarship Lock (numbers, percentages, p-values, CIs, citations, figure/table numbers, DOIs) and Epistemic Lock (claim-strength drift, negation/null-result flipping, vanished scope boundaries) |
+| `styleProfile` | JSON produced by `writing_style_profile`. Enables sentence-length distribution drift detection |
+| `journalProfile` | JSON produced by `writing_journal_profile`. Enables section-level Journal Fit auditing |
 
-## Document-aware auditing
+### How to read the output
 
-The same sentence can mean different things in different document types:
+Every finding carries a **severity** (HIGH / MEDIUM / LOW), a **confidence**, and a **kind** label:
 
-| profile | meaning | e.g. `as requested by the reviewer` |
+| Label | Meaning | Suggested action |
 |---|---|---|
-| `manuscript` | paper body | 🔴 revision residue, flagged |
-| `rebuttal` | point-by-point response | ✅ normal, not flagged |
-| `cover_letter` | submission letter | 🔴 residue, flagged |
-| `review` / `notes` / `unknown` | other | conservative handling |
+| `INVARIANT` | A **scientific invariant was altered** (number, unit, negation, scope, …) | Always revert; this is not a style matter |
+| `VIOLATION` | A clear rule violation (e.g. revision-process residue) | Remove it with the minimum necessary edit |
+| `CANDIDATE` | A candidate: possibly defensive prose, **but it may carry a legitimate boundary** | Judge by hand; **do not delete mechanically** |
+| `ADVISORY` | Advisory (mostly density/style statistics) | Weigh against the surrounding text |
 
-`writing_audit` accepts a `profile` argument, or auto-detects it from the file path.
+> **"0 findings" is not a pass.** The rule engine is deterministic text heuristics with limited coverage;
+> scientific correctness, logic and argument quality remain the author's responsibility.
 
-## Automatic / incremental audit
+---
 
-The plugin listens to `tools/post-execute`: when the agent writes/edits paper files (`.md` / `.tex` / `.txt`), it automatically audits and injects results into the next model request.
+## 4. The four protective layers
 
-- Audit state is persisted per file; only **incremental** changes are injected (new / resolved / still present)
-- No repeated injection when nothing changed
-- Before/after text is captured automatically, so Scholarship Lock + Epistemic Lock run without manually passing `original`
+| Layer | Guards against | Representative rules |
+|---|---|---|
+| **STYLE** | Defensive prose, over-explanation, semantic restatement, template clichés | Revision-process residue (`revised`, `as requested`, 本轮, 审稿人要求), qualifier stacking, strong claims lacking evidence, self-deprecating disclaimers, `不是X而是Y`, restatement loops, triple parallelism, LLM high-frequency words (`delve` / `tapestry`, density-gated), over-long sentences and mean sentence length, dash density, Unicode math symbols |
+| **EVIDENCE** | Polishing that silently changes research facts | Scholarship Lock (numbers, percentages, p-values, CIs, units, citations, figure/table numbers, DOIs), Epistemic Lock (`associated` must not become `caused`, null-result markers must not vanish, scope boundaries must survive), evidence-status conservation (`reported`/`observed`/`measured`/`estimated`/`simulated` must not be swapped) |
+| **JOURNAL** | Mismatch with target-journal conventions | Section-level syntax, citation density, epistemic fingerprint and rhetorical-move distributions, reported as a fit percentage plus the main differences |
+| **DELIVERY** | Workflow context leaking into the artifact | `REJECTED_ALTERNATIVE_LEAKAGE`, `REVISION_PROCESS_LEAKAGE`, `PROVENANCE_LEAKAGE`, `UNJUSTIFIED_NEGATIVE_REFERENCE`, `DELIVERY_CANDIDATE` |
 
-## Full install
+There is also a **discourse-statistics layer** (v1.3): paragraph rhythm (fragmented / congested / over-uniform),
+sentence-length rhythm uniformity, repeated logical scaffolding ("first, second, finally" reused across paragraphs),
+punctuation-scaffold overload, coined framework terms, generic-claim candidates (multiple weak signals), and
+**local citation integrity** (when a `.bib` sits beside `filePath`: `\cite` ↔ `.bib`, `\ref` ↔ `\label`,
+missing entry fields, duplicate DOIs).
 
-```sh
-# From npm (published — recommended)
-dsh plugin --profile web add dsh-plugin-writing-guard
+---
 
-# From GitHub (lib/ is committed — no build needed)
-dsh plugin --profile web add github:xmutfyh/dsh-plugin-writing-guard
+## 5. Design principles
 
-# Or from the GitHub tarball
-dsh plugin --profile web add https://github.com/xmutfyh/dsh-plugin-writing-guard/archive/refs/heads/master.tar.gz
+1. **Critique is not content.** Reviewer comments, user instructions, guard findings and rejected alternatives are
+   **control context**, not manuscript evidence. Their wording must never enter the prose unless authoritative
+   material independently supports the resulting statement.
+   For example: `To prevent data leakage, ...` → `Normalization parameters were estimated from the training data.`
+   (state the method fact without importing the defensive motive).
+2. **Prefer CUT over REWRITE.** If deleting a sentence preserves the scientific content and the argument, delete it;
+   do not polish a useless sentence into another useless sentence.
+3. **Do not close every semantic loop.** Stop after evidence plus the necessary calibrated interpretation; assume a
+   specialist reader can take one obvious inferential step unaided.
+4. **Minimal edit order**: `CUT → PRUNE → RECAST → SPLIT`. Do not automatically turn one hard sentence into three
+   explanatory ones.
+5. **Style-only requests default to the same length or shorter.**
+6. **Baseline first**: the manuscript itself > the journal/template > plugin defaults.
 
-# Or from a local source directory
-dsh plugin --profile web add ./path/to/dsh-plugin-writing-guard
+These principles land in two places: the `writing_rules` cheat sheet (loaded before drafting) and the
+`Manuscript Writing Policy` skill text.
 
-# Restart to apply
-dsh web
+---
+
+## 6. How it works / architecture
+
+```
+dsh-manuscript-guard
+├── src/index.ts      (21 KB)  Plugin assembly: registers 5 tools, uses only ctx.tools
+├── src/rules.ts      (249 KB) Deterministic rule engine (the core asset, 97 exports)
+├── src/delivery.ts   (36 KB)  Delivery Integrity detection (CAL)
+├── skills/writing-guard/      SKILL.md + manifest.yaml (the natural-language trigger surface)
+└── lib/                       Compiled output (**committed on purpose**)
 ```
 
-Repository: https://github.com/xmutfyh/dsh-plugin-writing-guard
+**Zero network, zero LLM, zero external processes**: every decision is local text rules. Nothing is uploaded, no
+model or endpoint is called, and no file outside the manuscript is read — the single exception being a `.bib`
+sitting next to `filePath`, used for local citation checks.
 
-## Why not Humanizer / AI Detector?
+### Why `lib/` is committed
 
-| | Writing Guard | Humanizer | AI Detector |
-|---|---|---|---|
-| Rules before writing | ✅ | ❌ | ❌ |
-| Checks while writing | ✅ | usually ❌ | ❌ |
-| Auto-audits paper edits | ✅ | ❌ | ❌ |
-| Full-text rewrite | ❌ | ✅ | ❌ |
-| Explainable issue location | ✅ | partial | partial |
-| Deterministic integrity checks | ✅ | usually no | varies |
+DSH installs plugins from GitHub tarballs **without running a build step**. After editing `src/`, run `pnpm build`
+and commit `lib/` too, or DSH will keep loading the old logic.
 
-> A humanizer fixes the text after it is written; Writing Guard guards it as you write.
+---
 
-## Security & Privacy
-
-- Deterministic integrity checks run locally; semantic writing decisions are handled by the host model under the Writing Guard policy.
-- The plugin only reads the paper files the agent is currently writing/editing and writes its incremental state under `~/.dsh/plugins/dsh-plugin-writing-guard/`.
-- The plugin itself does not collect or upload paper content.
-- See [SECURITY.md](SECURITY.md)
-
-## Tests
+## 7. Tests
 
 ```sh
-npm test
+pnpm install
+pnpm build
+pnpm test        # 370 passed / 0 failed
 ```
 
-394 deterministic TP / TN / boundary / regression tests covering:
+370 assertions cover: revision-residue TP/TN, document-profile inference, defensive writing and claim calibration,
+rhetorical patterns, density-gated LLM vocabulary, Scholarship/Epistemic Lock (claim ladder, evidence-status
+conservation, negation and null-result flipping), the discourse-statistics layer (paragraph/sentence rhythm,
+scaffolding, punctuation overload), Journal Profile distillation and Journal Fit, and Delivery Integrity (CAL).
 
-- STYLE, Scholarship Lock, Epistemic Lock
-- Claim alignment, local citation integrity
-- Journal Profile, Journal Fit
-- Rhetorical semantics (Chinese / medoid / transition)
-- **DELIVERY (CAL detection)**: rejected alternative / process residue / baseline reality / provenance / defensive hedge / counterfactual pair / NFKC / stopwords / scientific TN / safety TN / real-migration TN
+---
 
-CI runs build + tests on every push / PR.
+## 8. Differences from upstream (maintenance notes)
 
-> Deterministic rules (regex + normalization) cannot cover every semantic paraphrase. DELIVERY-layer detection is limited to leakage patterns expressible via regular expressions; manual review remains necessary.
+| Difference | Detail |
+|---|---|
+| Tool count | 13 → **5** (the 8 `writing_word_*` tools are gone) |
+| Manifest | `manifest.yaml`'s tool list went from 10 to 5 entries (upstream already omitted 3 word tools) |
+| `rules.ts` | Only 3 lines differ: the file header comment, `PLUGIN_VERSION`, and the `rulesBrief()` title. **This is the only conflict point when merging upstream by hand** |
+| No config | The plugin accepts no config (`autoAuditOnWrite` and friends were deleted with the code) |
+| Install channel | Git only, never npm; consequently `packageManager` was dropped (it force-downgraded local pnpm to 11.x), at the cost of pinning pnpm explicitly in CI |
 
-## FAQ
+Restoring the Word side would be a separate task (roughly upstream's F2/F3 route); do not scatter Word code back
+into this fork.
 
-### Is this a DSH “remove AI flavor” plugin?
+---
 
-You can think of it that way, but Writing Guard is not a traditional humanizer. It detects common AI writing patterns during paper writing and revision instead of rewriting the whole text with another model.
+## 9. Privacy & security
 
-### Does it support Chinese papers?
+- All auditing is local. No manuscript content is uploaded or collected.
+- The plugin reads only the paths you pass to a tool, and **writes no state file at all** (the upstream incremental
+  state layer was removed with the auto-audit machinery).
+- It subscribes to no DSH events and performs no background work.
+- See [SECURITY.md](SECURITY.md).
 
-Yes. Rules cover both Chinese and English academic writing patterns, with language-aware density thresholds (CJK characters vs. English words).
+---
 
-### Does it support SCI / English academic writing?
+## 10. License
 
-Yes. `writing_audit` checks English manuscripts for revision residue, defensive writing, LLM-overused expressions, and common AI-style sentence patterns.
-
-### What is the difference from academic-humanizer?
-
-academic-humanizer focuses on rewriting existing text into a more natural style; Writing Guard focuses on continuous checking and prevention inside the DSH paper workflow. They can be used together.
-
-## CHANGELOG
-
-Full changelog and implementation details are in [CHANGELOG.md](CHANGELOG.md).
-
-## License
-
-MIT
+MIT, with the upstream copyright notice retained
+(`Copyright (c) 2026 dsh-plugin-writing-guard contributors`). The rule engine and the design come from the upstream
+author's work; this fork only trims it and adapts it to DSH 0.2.x.

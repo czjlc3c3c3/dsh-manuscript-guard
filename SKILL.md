@@ -1,3 +1,9 @@
+><!--
+  This root SKILL.md is the upstream copy, retained for history only.
+  The canonical, maintained skill for this fork is skills/writing-guard/SKILL.md
+  (5 text-only tools). Do not treat this file as the active skill definition.
+-->
+
 ---
 name: writing-guard
 description: >-

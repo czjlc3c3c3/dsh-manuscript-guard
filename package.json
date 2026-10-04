@@ -1,19 +1,17 @@
 {
-  "name": "dsh-plugin-writing-guard",
-  "version": "2.0.1",
-  "description": "Scientific writing & document integrity guard for AI-assisted research - prompt-guided argument economy with deterministic scientific, delivery, journal, and Word integrity checks.",
+  "name": "dsh-manuscript-guard",
+  "version": "2.1.0",
+  "description": "Text-only scientific writing audit guard for AI-assisted research (fork of dsh-plugin-writing-guard, F1 trim): deterministic manuscript, delivery, style and journal checks. No Word/DOCX editing.",
   "type": "module",
   "main": "lib/index.js",
   "files": [
     "lib",
-    "src/word_guard",
     "skills",
     "scripts",
     "cordis.patch.yml"
   ],
   "scripts": {
     "build": "tsc",
-    "pretest": "npm run build",
     "test": "node tests/run-tests.mjs",
     "postinstall": "node scripts/install-extras.mjs"
   },
@@ -24,13 +22,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xmutfyh/dsh-plugin-writing-guard.git"
+    "url": "git+https://github.com/czjlc3c3c3/dsh-manuscript-guard.git"
   },
-  "homepage": "https://github.com/xmutfyh/dsh-plugin-writing-guard#readme",
-  "bugs": {
-    "url": "https://github.com/xmutfyh/dsh-plugin-writing-guard/issues"
-  },
-  "packageManager": "pnpm@11.21.0",
   "engines": {
     "node": ">=18"
   },
@@ -42,24 +35,16 @@
     "scientific-integrity",
     "journal-fit",
     "deepseek-harness",
-    "docx",
-    "microsoft-word",
-    "ooxml",
-    "document-integrity",
-    "document-processing",
     "manuscript",
     "proofreading"
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6"
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6 || ^0.2.0-rc.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
     "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
   }

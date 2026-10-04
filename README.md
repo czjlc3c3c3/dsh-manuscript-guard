@@ -1,3 +1,18 @@
+# Manuscript Guard（dsh-manuscript-guard）
+
+> **这是 `xmutfyh/dsh-plugin-writing-guard` 的自维裁剪 fork（F1），不是上游。**
+>
+> - **用途**：只做**纯文本**论文写作审计，面向个人研究工作流（DSH profile `web`）。
+> - **裁剪内容**：删除了全部 Word/Python 侧能力（8 个 `writing_word_*` 工具、`src/word_guard/`、`venv`/`DSH_PYTHON` 依赖）以及 `autoAuditOnWrite` / `autoBrief` 自动注入机制（该机制曾导致 DSH session format v4 落盘卡死）。
+> - **保留内容**：5 个文本侧工具 —— `writing_audit`、`writing_rules`、`writing_style_profile`、`writing_journal_profile`、`writing_delivery_audit`，以及全部规则引擎 `src/rules.ts`（核心资产，未改动规则逻辑）。
+> - **版本**：`2.1.0`（脱离上游 2.0.1 版本序列）。peer 放宽为 `@deepseek-ai/dsh-tools: ^0.1.0-rc.6 || ^0.2.0-rc.1`，以适配 DSH 0.2.x，且**不需要** `compatibility.json` 版本豁免。
+> - **不发布 npm**：从 git 直接安装（`github:czjlc3c3c3/dsh-manuscript-guard#semver:^2.1.0`）。
+> - **许可证**：MIT，保留上游版权声明。
+>
+> 下方内容为上游原文，其中关于 Word/DOCX、npm 安装、测试数量的表述**已不适用于本 fork**，仅作沿革参考。
+
+---
+
 # Writing Guard
 
 [![CI](https://github.com/xmutfyh/dsh-plugin-writing-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/xmutfyh/dsh-plugin-writing-guard/actions/workflows/ci.yml)

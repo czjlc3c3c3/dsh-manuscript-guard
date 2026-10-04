@@ -5,7 +5,6 @@
  * 运行：node tests/run-tests.mjs
  */
 import { auditText, detectDocumentProfile, filterReport, hitFingerprint, diffAudit, serializeFingerprints, deserializeFingerprints, diffScholarship, computeStyleProfile, computeJournalProfile, computeJournalProfileFromDocuments, auditJournalFit, detectRhetoricalMoves, splitSentences, cosineSimilarity, tokenizeForSimilarity, extractEpistemicMarkers, diffEpistemic, alignSentences, formatReport, extractClaimSpans, simTier, analyzeParagraphRhythm, analyzeSentenceRhythm, scaffoldSignature, findRepeatedScaffolds, findPunctuationOverloads, findCoinedFrameworks, findGenericClaims, parseBibText, checkCitationIntegrity } from '../lib/rules.js'
-import { isPaperFile, baselineByteSize, pruneBaselines, buildAutoAuditControl } from '../lib/index.js'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -501,19 +500,6 @@ console.log('=== 26. v0.5.1 LaTeX 引用命令整体删除（\cite 的 key 不�
   check('latex textbf content kept (important result)', /important result/.test(r.stats.englishWords > 0 ? 'x' : '') || r.stats.englishWords >= 8, `words=${r.stats.englishWords}`)
 }
 
-console.log('=== 27. v0.5.2 isPaperFile 词边界（newspaper/synthesis/coverage/paperwork 不再误判）===')
-{
-  const cwd = 'C:/workspace/proj'
-  for (const p of ['C:/workspace/proj/newspaper-notes.md', 'C:/workspace/proj/notes/synthesis-draft.md', 'C:/workspace/proj/doc/coverage-report.md', 'C:/workspace/proj/readme/paperwork.md']) {
-    check(`isPaperFile TN: ${p.split('/').pop()}`, !isPaperFile(p, cwd), p)
-  }
-  for (const p of ['C:/workspace/proj/manuscript/main.md', 'C:/workspace/proj/01_manuscript/ms.tex', 'C:/workspace/proj/notes/revision_notes.md', 'C:/workspace/proj/response_letter.md', 'C:/workspace/proj/修订稿.md', 'C:/workspace/proj/reviewer2_comments.md']) {
-    check(`isPaperFile TP: ${p.split('/').pop()}`, isPaperFile(p, cwd), p)
-  }
-  // 知识库目录前缀匹配（cwd 相对路径）
-  check('isPaperFile TP: root-dir prefix (01_manuscript/)', isPaperFile('01_manuscript/draft.md', cwd))
-  check('isPaperFile TN: root-dir not matching', !isPaperFile('10_notes/draft.md', cwd))
-}
 
 console.log('=== 28. v0.5.2 profile 检测扩展（reviewer2 / my_notes / revision 对齐）===')
 {
@@ -989,25 +975,6 @@ console.log('=== 55. v0.9 对齐相似度分档（0.70/0.55/0.45）===')
   check('low-sim rewrite → no false claim-drift', !hasRule(rewritten, 'claim-drift'), JSON.stringify(rewritten.hits.map((h) => h.ruleId)))
 }
 
-console.log('=== 56. v0.9 基线 UTF-8 字节核算 + 淘汰 ===')
-{
-  // 中文 3 字节/字（content.length 会算成 1）
-  check('baselineByteSize zh = 3 bytes/char', baselineByteSize('中') === 3, `bytes=${baselineByteSize('中')}`)
-  check('baselineByteSize en = 1 byte/char', baselineByteSize('abc') === 3, `bytes=${baselineByteSize('abc')}`)
-
-  // 淘汰：总量超限时删除最旧
-  const map = new Map([
-    ['a.md', { content: 'x'.repeat(1000), ts: 1 }],
-    ['b.md', { content: 'y'.repeat(1000), ts: 2 }],
-    ['c.md', { content: 'z'.repeat(1000), ts: 3 }],
-  ])
-  // 注入一个小总量上限场景无法直接改常量；改为验证 prune 对文件数上限（20）的行为：
-  const many = new Map()
-  for (let i = 0; i < 25; i++) many.set(`f${i}.md`, { content: 'abc', ts: i })
-  pruneBaselines(many)
-  check('pruneBaselines caps at 20 files', many.size === 20, `size=${many.size}`)
-  check('pruneBaselines evicts oldest first', !many.has('f0.md') && many.has('f24.md'))
-}
 
 console.log('=== 57. v0.9.1 establish+基建名词（建立≠证明）上下文排除 ===')
 {
@@ -1666,7 +1633,7 @@ console.log('=== 89. v1.4 Journal Profile 蒸馏（computeJournalProfile）===')
     'Our findings suggest that temperature is a key control. The observed increase may be related to enhanced vapor transport. Further studies should examine pore-scale salt precipitation.',
   ].join('\n')
   const profile = computeJournalProfile(corpus, { journal: 'Test Journal', articleType: 'research-article' })
-  check('journal profile metadata', profile.metadata.journal === 'Test Journal' && profile.metadata.profileVersion === '2.0.1' && profile.structure.sections.length >= 4)
+  check('journal profile metadata', profile.metadata.journal === 'Test Journal' && profile.metadata.profileVersion === '2.1.0' && profile.structure.sections.length >= 4)
   check('journal profile has sentence distribution', !!profile.sentenceStyle.sentenceLength && profile.sentenceStyle.sentenceLength.count > 0)
   check('journal profile has section details', profile.structure.sections.some((s) => s.name === 'results' && s.sentenceLength.count > 0))
   check('journal profile preserves only statistics', !JSON.stringify(profile).includes('This study investigates'))
@@ -2485,28 +2452,6 @@ console.log('=== 100. v2.0 Argument Economy / Control Plane ===')
   check('v2 semantic-closure-marker-zh detected', zh.hits.some(h => h.ruleId === 'semantic-closure-marker-zh'))
   check('v2 content-free-evaluation-zh cuts', zh.hits.some(h => h.ruleId === 'content-free-evaluation-zh' && h.action === 'CUT'))
 
-  const fakeDiff = {
-    added: [{
-      ruleId: 'defensive-purpose-en',
-      category: 'claim_calibration',
-      severity: 'high',
-      confidence: 'high',
-      label: 'Defensive-purpose sentence',
-      snippet: 'To prevent data leakage, ...',
-      suggestion: 'WRITE A NEW SENTENCE ABOUT DATA LEAKAGE',
-      findingKind: 'candidate',
-      action: 'REFRAME_TO_FACT',
-      paragraphIndex: 0,
-    }],
-    resolved: [],
-    remaining: 1,
-    currentFingerprints: [],
-  }
-  const control = buildAutoAuditControl('paper.md', fakeDiff)
-  check('v2 control block excludes remediation suggestion wording', !control.includes('WRITE A NEW SENTENCE ABOUT DATA LEAKAGE'))
-  check('v2 control block explicitly forbids prose transfer', control.includes('CONTROL METADATA ONLY') && control.includes('intentionally omit snippets'))
-  check('v2 control block does not re-amplify diagnostic vocabulary', !control.toLowerCase().includes('data leakage') && !control.includes('To prevent'))
-  check('v2 control block carries structured edit action', control.includes('action=REFRAME_TO_FACT'))
 }
 
 console.log('')

@@ -1,6 +1,32 @@
 # Changelog
 
-All notable changes to dsh-plugin-writing-guard are documented here.
+All notable changes to **dsh-manuscript-guard** (fork of `dsh-plugin-writing-guard`) are documented here.
+Entries at and below `[2.0.1]` are upstream history, kept verbatim for lineage.
+
+## [2.1.0] - 2026-10-04
+
+F1 trim: text-only fork, self-maintained.
+
+### Changed
+
+- **Package identity**: `dsh-plugin-writing-guard` -> `dsh-manuscript-guard`; version `2.0.1` -> `2.1.0`; plugin `name` export, bundle patch `id`/`name`, postinstall log prefix, `PLUGIN_VERSION`, and `rulesBrief()` header all follow.
+- **Peer dependencies**: `@deepseek-ai/dsh-tools` widened from `^0.1.0-rc.6` to `^0.1.0-rc.6 || ^0.2.0-rc.1` so DSH 0.2.x prerequisites match; **`@deepseek-ai/dsh-llm` peer removed** (its `createUserMessage` no longer exists in DSH 0.2.1 and was only used by the deleted injection block). `@deepseek-ai/cordis` peer dropped (the compatibility gate ignores non-`@deepseek-ai/dsh*` peers); kept as a devDependency for `import type { Context }` only.
+- **Removed — Word/Python side**: 8 `writing_word_*` tools, `src/word_guard/` (12 Python modules), the `PLUGIN_DIR` / `WORD_GUARD_PATH` / `callWordGuard` wiring, the `.docx` branch of `readTextFile`, and the Python-copy plus python-docx probe in `scripts/install-extras.mjs`.
+- **Removed — auto-audit injection**: `autoAuditOnWrite`, `autoBrief`, `autoAuditMinSeverity`, `maxAutoInjectPerTurn`, `mode` config keys; the `tools/pre-execute` and `tools/post-execute` handlers; `buildAutoAuditControl`; `onAgentLifecycle`; and the incremental state layer (`loadState`/`queueSave`/`pruneBaselines`/`baselineByteSize`/fingerprint cache). The plugin now subscribes to **no** DSH events and registers only `ctx.tools`.
+- **Removed**: `prepare` and `pretest` scripts (compiled `lib/` stays committed for git installs); the `packageManager` field (it forced pnpm 11 locally); `homepage`/`bugs`; Word-related keywords and `files` entry; the npm publish workflow; the upstream root `SKILL.md` duplicate.
+- **Docs**: `skills/writing-guard/manifest.yaml` tool list 10 -> 5 (matching the 5 registered tools, and dropping 3 word tools upstream never listed); `skills/writing-guard/SKILL.md` rewritten to the 5-tool text-only surface.
+
+### Kept
+
+- The whole deterministic rule engine `src/rules.ts` (only the header comment, `PLUGIN_VERSION` and the `rulesBrief()` title string changed).
+- `src/delivery.ts` and `writing_delivery_audit`.
+- All text-side regression tests (Word/auto-audit-only test blocks removed).
+
+### Verified
+
+- `pnpm build` (tsc 7.0.2) clean; `pnpm test` 370 passed / 0 failed.
+- Loaded against the real `@deepseek-ai/dsh-tools@0.2.1-alpha.1`: exactly 5 tools register, zero event subscriptions, and `writing_audit` on `draft_en.md` returns byte-identical output to 2.0.1 (2471 chars / 12 findings).
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

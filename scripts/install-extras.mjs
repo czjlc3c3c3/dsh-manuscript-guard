@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 /**
- * Post-install script for dsh-plugin-writing-guard.
- * Copies skill files and Python word_guard module to DSH directories.
+ * Post-install script for dsh-manuscript-guard.
+ * Copies the skill files to the DSH home directory.
+ *
+ * Text-only fork: the Python word_guard module is gone, so this script no
+ * longer copies Python files or probes for python-docx.
  *
  * This script NEVER throws — failures are logged as warnings so npm install
- * does not fail. The plugin works without the skill/Python files; they just
- * enable natural-language triggering and Word editing.
+ * does not fail. The plugin works without the skill files; they just enable
+ * natural-language triggering.
  */
 import { existsSync, mkdirSync, cpSync, chmodSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -34,8 +37,8 @@ function copyDir(src, dest) {
 try {
   const DSH_HOME = getDshHome()
   if (!DSH_HOME) {
-    console.warn('[dsh-plugin-writing-guard] Could not determine DSH_HOME — skipping postinstall setup')
-    console.warn('[dsh-plugin-writing-guard] You can manually copy skills/ and src/word_guard/ later')
+    console.warn('[dsh-manuscript-guard] Could not determine DSH_HOME — skipping postinstall setup')
+    console.warn('[dsh-manuscript-guard] You can manually copy skills/ later')
     // Exit successfully — this is not a fatal error
     process.exit(0)
   }
@@ -46,52 +49,14 @@ try {
     const skillDest = join(DSH_HOME, 'skills', 'writing-guard')
     if (existsSync(skillSrc)) {
       copyDir(skillSrc, skillDest)
-      console.log(`[dsh-plugin-writing-guard] Skill installed to ${skillDest}`)
+      console.log(`[dsh-manuscript-guard] Skill installed to ${skillDest}`)
     }
   } catch (e) {
-    console.warn(`[dsh-plugin-writing-guard] Could not install skill: ${e.message}`)
+    console.warn(`[dsh-manuscript-guard] Could not install skill: ${e.message}`)
   }
 
-  // 2. Copy Python word_guard module to ~/.dsh/plugins/dsh-plugin-writing-guard/word_guard/
-  try {
-    const pySrc = join(PLUGIN_ROOT, 'src', 'word_guard')
-    const pyDest = join(DSH_HOME, 'plugins', 'dsh-plugin-writing-guard', 'word_guard')
-    if (existsSync(pySrc)) {
-      copyDir(pySrc, pyDest)
-      console.log(`[dsh-plugin-writing-guard] Python module installed to ${pyDest}`)
-    }
-  } catch (e) {
-    console.warn(`[dsh-plugin-writing-guard] Could not install Python module: ${e.message}`)
-  }
-
-  // 3. Check python-docx availability (informational only)
-  try {
-    const { execSync } = await import('node:child_process')
-    // Try DSH_PYTHON, then python3, then python (Windows often only has python)
-    const candidates = process.env.DSH_PYTHON
-      ? [process.env.DSH_PYTHON]
-      : process.platform === 'win32'
-        ? ['python', 'python3']
-        : ['python3', 'python']
-    let found = false
-    for (const cmd of candidates) {
-      try {
-        execSync(`${cmd} -c "import docx; print(docx.__version__)"`, { stdio: 'pipe' })
-        console.log(`[dsh-plugin-writing-guard] python-docx detected via ${cmd} ✓`)
-        found = true
-        break
-      } catch {}
-    }
-    if (!found) {
-      console.warn('[dsh-plugin-writing-guard] python-docx not found — Word tools will not work until installed:')
-      console.warn('  pip install python-docx')
-    }
-  } catch {
-    // child_process import failed — ignore
-  }
-
-  console.log('[dsh-plugin-writing-guard] Postinstall complete')
+  console.log('[dsh-manuscript-guard] Postinstall complete')
 } catch (e) {
   // Last resort — never let postinstall fail the npm install
-  console.warn(`[dsh-plugin-writing-guard] Postinstall warning: ${e.message}`)
+  console.warn(`[dsh-manuscript-guard] Postinstall warning: ${e.message}`)
 }

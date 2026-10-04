@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # 版本统一从 package.json 的 packageManager 字段读取（pnpm@11.21.0），
-      # 不再显式传 version，避免 "Multiple versions of pnpm specified" 冲突
+      # fork 移除了 package.json 的 packageManager 字段（避免本地 profile 的
+      # pnpm 12 被强制降级），因此这里必须显式钉版本，且要与 pnpm-lock.yaml 一致
       - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
       - uses: actions/setup-node@v4
         with:
           node-version: 22

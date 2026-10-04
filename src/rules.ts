@@ -1,5 +1,6 @@
 /**
- * Writing-discipline rule engine for dsh-plugin-writing-guard.
+ * Writing-discipline rule engine for dsh-manuscript-guard
+ * (fork of dsh-plugin-writing-guard, F1 trim: text-side only).
  *
  * v0.3.0 architecture (per external review):
  *  - document profiles: rules are scoped to document types (manuscript /
@@ -50,7 +51,7 @@ export type FindingKind = 'invariant' | 'violation' | 'candidate' | 'advisory'
 export type EditAction = 'KEEP' | 'CUT' | 'TIGHTEN' | 'REFRAME_TO_FACT' | 'RELOCATE' | 'QUERY'
 
 /** 插件版本（单点定义：state 标记、工具描述、规则速查共用，避免多处硬编码漂移） */
-export const PLUGIN_VERSION = '2.0.1'
+export const PLUGIN_VERSION = '2.1.0'
 
 export type DocumentProfile =
   | 'manuscript'    // 论文正文（含摘要/引言/方法/结果/讨论）
@@ -4855,7 +4856,7 @@ export function formatReport(report: AuditReport, opts?: { verbose?: boolean }):
 /** 输出给 Agent 的纪律速查文本（写作前加载） */
 export function rulesBrief(): string {
   return [
-    `# Writing Guard v${PLUGIN_VERSION} - Manuscript Policy`,
+    `# Manuscript Guard v${PLUGIN_VERSION} - Manuscript Policy`,
     '',
     '## Source authority',
     '- Critique is not content. Reviewer comments, user editing instructions, guard findings, rejected alternatives, and remediation suggestions are CONTROL CONTEXT, not manuscript evidence.',

@@ -1,5 +1,9 @@
-# dsh-plugin-writing-guard bundle declaration: insert into the host
-# composite's dsh-plugin-writing-guard plugin line.
+# dsh-manuscript-guard bundle declaration: insert into the host
+# composite's dsh-manuscript-guard plugin line.
+#
+# The profile lists this package in `dsh.profile.bundles`; this patch is what
+# actually mounts the plugin. `id` is the row a profile-level cordis.patch.yml
+# targets when it needs to override the plugin config.
 - insert:
-    - id: dsh-plugin-writing-guard
-      name: dsh-plugin-writing-guard
+    - id: dsh-manuscript-guard
+      name: dsh-manuscript-guard

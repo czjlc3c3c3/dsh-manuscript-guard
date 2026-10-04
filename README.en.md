@@ -1,3 +1,18 @@
+# Manuscript Guard (dsh-manuscript-guard)
+
+> **This is a self-maintained trimmed fork (F1) of `xmutfyh/dsh-plugin-writing-guard`, not upstream.**
+>
+> - **Scope**: plain-text manuscript audit only, for a personal research workflow (DSH profile `web`).
+> - **Removed**: the entire Word/Python surface (8 `writing_word_*` tools, `src/word_guard/`, the `venv`/`DSH_PYTHON` dependency) and the `autoAuditOnWrite` / `autoBrief` auto-injection machinery (which used to wedge DSH session-format-v4 persistence).
+> - **Kept**: 5 text-side tools — `writing_audit`, `writing_rules`, `writing_style_profile`, `writing_journal_profile`, `writing_delivery_audit` — plus the whole rule engine `src/rules.ts` (core asset; rule logic untouched).
+> - **Version**: `2.1.0` (leaves the upstream 2.0.1 line). Peer widened to `@deepseek-ai/dsh-tools: ^0.1.0-rc.6 || ^0.2.0-rc.1` so DSH 0.2.x loads it with **no** `compatibility.json` exemption.
+> - **Not published to npm**: install from git (`github:czjlc3c3c3/dsh-manuscript-guard#semver:^2.1.0`).
+> - **License**: MIT, upstream copyright notice retained.
+>
+> Everything below is upstream text; its Word/DOCX, npm-install and test-count statements **no longer apply to this fork** and are kept for lineage only.
+
+---
+
 # DSH Writing Guard
 
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
